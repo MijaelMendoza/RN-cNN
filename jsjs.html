@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Image Prediction</title>
+</head>
+<body>
+	<h1>Image Prediction</h1>
+	<p>Select an image to classify:</p>
+	<input type="file" onchange="cargarImagen(event)">
+	<br><br>
+	<button onclick="predecir()">Predict</button>
+	<br><br>
+	<p id="resultado"></p>
+    
+	<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+	<script>
+		// Load the model asynchronously
+		async function cargarModelo() {
+			modelo = await tf.loadLayersModel("model.json");
+			console.log("Modelo cargado correctamente");
+		}
+
+		// Load the selected image
+		function cargarImagen(event) {
+			let imagen = document.getElementById('imagen');
+			imagen.src = URL.createObjectURL(event.target.files[0]);
+		}
+
+		// Normalize and resize the image
+		function prepararImagen(imagen) {
+			// Create a new canvas with the normalized image
+			let canvas = document.createElement('canvas');
+			let ctx = canvas.getContext('2d');
+			canvas.width = 100;
+			canvas.height = 100;
+			ctx.drawImage(imagen, 0, 0, 100, 100);
+
+			// Normalize the pixel values (between 0 and 1)
+			let tensor = tf.browser.fromPixels(canvas, 1).toFloat().div(tf.scalar(255));
+			tensor = tf.expandDims(tensor, 0);
+
+			return tensor;
+		}
+
+		// Predict the image
+		async function predecir() {
+			let imagen = document.getElementById('imagen');
+
+			// Prepare the image tensor for prediction
+			let tensor = prepararImagen(imagen);
+
+			// Use the model to predict the digit
+			let resultados = await modelo.predict(tensor).data();
+			let digit = resultados.indexOf(Math.max(...resultados));
+			document.getElementById("resultado").innerHTML = "Prediction: " + digit;
+		}
+
+		// Initialize the model when the page is loaded
+		window.onload = function() {
+			cargarModelo();
+		};
+	</script>
+	<img id="imagen">
+</body>
+</html>

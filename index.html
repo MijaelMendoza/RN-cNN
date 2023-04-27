@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="Husmow.ico" />
+    <title>IA</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+    <style>
+      #resultado {
+        font-weight: bold;
+        font-size: 6rem;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    
+    <main>
+
+      <div class="container mt-5">
+        <div class="row">
+          <div class="col-12 col-md-4 offset-md-4 text-center">
+            <button onclick="predecir()">Predict</button>
+            <img id="img" src = 'husmoww.png' width="400" height="400" style="max-width: 100%;"></img>
+            <div id="resultado"></div>            
+          </div>
+        </div>
+      </div>
+
+    
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+
+  <script type="text/javascript">
+
+    var tamano = 400;
+    var canvas = document.getElementById("img");
+
+    var modelo = null;
+
+    (async() => {
+      console.log("Cargando modelo...");
+      modelo = await tf.loadLayersModel("model.json");
+      console.log("Modelo cargado");
+    })();
+
+    function predecir() {
+      if (modelo != null) {
+        let otrocanvas = prepararImagen(canvas);
+
+        //Hacer la predicción
+        var ctx2 = otrocanvas.getContext("2d");
+        var imgData = ctx2.getImageData(0,0, 100, 100);
+
+        var arr = [];
+        var arr100 = [];
+
+        for (var p=0; p < imgData.data.length; p+= 4) {
+          var rojo = imgData.data[p] / 255;
+          var verde = imgData.data[p+1] / 255;
+          var azul = imgData.data[p+2] / 255;
+
+          var gris = (rojo+verde+azul)/3;
+
+          arr100.push([gris]);
+          if (arr100.length == 100) {
+            arr.push(arr100);
+            arr100 = [];
+          }
+        }
+
+        arr = [arr];
+
+        var tensor = tf.tensor4d(arr);
+        var resultado = modelo.predict(tensor).dataSync();
+
+        var respuesta;
+        if (resultado <= .10) {
+          respuesta = "Gato";
+        } else {
+          respuesta = "NO";
+        }
+        if (resultado >= .85) {
+          respuesta = "Perro";
+        } else {
+          resultado = "NO";
+        }
+
+        document.getElementById("resultado").innerHTML = respuesta;
+
+      }
+
+      setTimeout(predecir, 150);
+    }
+
+
+    function prepararImagen(imagen) {
+      // Create a new canvas with the normalized image
+      let canvas = document.createElement('canvas');
+      let ctx = canvas.getContext('2d');
+      canvas.width = 100;
+      canvas.height = 100;
+      ctx.drawImage(imagen, 0, 0, 100, 100);
+
+      return canvas;
+    }
+  </script>
+  </body>
+</html>
